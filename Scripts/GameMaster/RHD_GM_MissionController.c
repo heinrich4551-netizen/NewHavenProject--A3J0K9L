@@ -78,6 +78,38 @@ class RHD_GM_MissionController
         return null;
     }
 
+    bool CompleteObjective(RHD_GM_MissionInstance instance, string objectiveId)
+    {
+        if (!instance || !instance.IsRunning())
+            return false;
+
+        RHD_GM_MissionObjective objective = instance.FindObjective(objectiveId);
+        if (!objective || objective.Completed || objective.Failed)
+            return false;
+
+        if (!instance.CompleteObjective(objectiveId))
+            return false;
+
+        DispatchObjectiveEvent(instance, objective, true);
+        return true;
+    }
+
+    bool FailObjective(RHD_GM_MissionInstance instance, string objectiveId)
+    {
+        if (!instance || !instance.IsRunning())
+            return false;
+
+        RHD_GM_MissionObjective objective = instance.FindObjective(objectiveId);
+        if (!objective || objective.Completed || objective.Failed)
+            return false;
+
+        if (!instance.FailObjective(objectiveId))
+            return false;
+
+        DispatchObjectiveEvent(instance, objective, false);
+        return true;
+    }
+
     void StopMission(RHD_GM_MissionInstance instance, bool failed = false, bool timedOut = false)
     {
         if (!instance || !instance.IsRunning())
@@ -132,7 +164,6 @@ class RHD_GM_MissionController
             RHD_GM_MissionObjective failedObjective = FindFailedRequiredObjective(instance);
             if (failedObjective)
             {
-                DispatchObjectiveEvent(instance, failedObjective, false);
                 StopMission(instance, true);
                 continue;
             }
