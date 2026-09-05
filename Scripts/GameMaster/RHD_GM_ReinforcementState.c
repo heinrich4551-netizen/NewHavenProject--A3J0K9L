@@ -3,12 +3,14 @@ class RHD_GM_ReinforcementState
     protected int m_GroupsRequested;
     protected int m_GroupsSpawned;
     protected float m_NextReinforcementSeconds;
+    protected float m_ReinforcementDelaySeconds;
 
     void Configure(int groups, float delaySeconds)
     {
         m_GroupsRequested = Math.Clamp(groups, 0, 20);
         m_GroupsSpawned = 0;
-        m_NextReinforcementSeconds = Math.Max(0.0, delaySeconds);
+        m_ReinforcementDelaySeconds = Math.Max(0.0, delaySeconds);
+        m_NextReinforcementSeconds = m_ReinforcementDelaySeconds;
     }
 
     bool CanSpawn()
@@ -19,7 +21,10 @@ class RHD_GM_ReinforcementState
     void MarkSpawned()
     {
         if (m_GroupsSpawned < m_GroupsRequested)
+        {
             m_GroupsSpawned++;
+            m_NextReinforcementSeconds = m_ReinforcementDelaySeconds;
+        }
     }
 
     int GetGroupsRequested()
@@ -35,6 +40,11 @@ class RHD_GM_ReinforcementState
     float GetNextReinforcementSeconds()
     {
         return m_NextReinforcementSeconds;
+    }
+
+    float GetReinforcementDelaySeconds()
+    {
+        return m_ReinforcementDelaySeconds;
     }
 
     void Tick(float deltaSeconds)
