@@ -58,7 +58,7 @@ class RHD_GM_MissionActivation
         foreach (RHD_GM_MissionObjective objective : composition.Objectives)
         {
             if (objective)
-                instance.AddObjective(objective);
+                instance.AddObjective(objective.Clone());
         }
 
         if (m_Events)
