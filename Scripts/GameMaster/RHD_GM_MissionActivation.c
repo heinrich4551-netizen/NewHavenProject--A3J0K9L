@@ -2,18 +2,25 @@ class RHD_GM_MissionActivation
 {
     protected RHD_GM_MissionController m_Controller;
     protected ref RHD_GM_MissionLibrary m_Library;
-    protected ref RHD_GM_MissionEventDispatcher m_Events;
+    protected RHD_GM_MissionEventDispatcher m_Events;
 
     void RHD_GM_MissionActivation(RHD_GM_MissionController controller = null)
     {
         m_Controller = controller;
         m_Library = new RHD_GM_MissionLibrary();
-        m_Events = new RHD_GM_MissionEventDispatcher();
+
+        if (m_Controller)
+            m_Events = m_Controller.GetEventDispatcher();
+        else
+            m_Events = new RHD_GM_MissionEventDispatcher();
     }
 
     void SetController(RHD_GM_MissionController controller)
     {
         m_Controller = controller;
+
+        if (m_Controller)
+            m_Events = m_Controller.GetEventDispatcher();
     }
 
     RHD_GM_MissionController GetController()
@@ -60,9 +67,6 @@ class RHD_GM_MissionActivation
             if (objective)
                 instance.AddObjective(objective.Clone());
         }
-
-        if (m_Events)
-            m_Events.Dispatch(new RHD_GM_MissionEvent(RHD_GM_MissionEventType.STARTED, composition.Id, "Mission started"));
 
         return instance;
     }
