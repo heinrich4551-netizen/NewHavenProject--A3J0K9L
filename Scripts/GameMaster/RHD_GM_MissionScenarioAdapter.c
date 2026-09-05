@@ -100,7 +100,7 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
                 return m_World.IsEliminationComplete(instance);
 
             case RHD_GM_MissionType.CIVILIAN_PROTECTION:
-                return AreProtectionConditionsMet(instance);
+                return m_World.IsCivilianProtectionComplete(instance);
         }
 
         return false;
@@ -119,11 +119,6 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
             return !m_World.AreProtectedCiviliansAlive(instance);
 
         return false;
-    }
-
-    protected bool AreProtectionConditionsMet(RHD_GM_MissionInstance instance)
-    {
-        return m_World.AreProtectedCiviliansAlive(instance);
     }
 
     override void CleanupMissionEntities(RHD_GM_MissionInstance instance)
