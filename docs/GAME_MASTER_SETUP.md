@@ -1,38 +1,44 @@
-# Game Master setup
+# Game Master Setup
 
-## Goal
+## Purpose
 
-The framework is intentionally configured around a small number of persistent scenario entities. The Game Master should not need to edit mission script source code for normal operation.
+The RHD Game Master mission layer is designed so a Game Master can compose missions from reusable scenario entities instead of editing mission source code.
 
-## Initial Workbench setup
+## Current architecture
 
-1. Open the New Haven scenario in Reforger Workbench.
-2. Create or use a persistent framework entity in the scenario.
-3. Add the `RHD_GM_MissionFramework` ScriptComponent to that entity.
-4. Save the scenario.
-5. Create the Game Master-facing mission prefabs/entities in Workbench and connect their configuration to the framework.
+- `RHD_GM_MissionFramework` — persistent registry and mission definitions.
+- `RHD_GM_MissionGameMasterComponent` — scenario-facing component that owns a mission controller.
+- `RHD_GM_MissionController` — starts, ticks, completes, fails, times out, and cleans up active missions.
+- `RHD_GM_MissionInstance` — runtime state for one mission execution.
+- `RHD_GM_MissionTask` — reusable objective/task state.
+- `RHD_GM_MissionAdapter` — scenario-specific integration contract.
+- `RHD_GM_MissionConfig` — tunable mission parameters.
 
-## Recommended GM workflow
+## Recommended Workbench setup
 
-- Place the mission entity at the desired objective/start area.
-- Configure difficulty and mission parameters in the entity/component properties.
-- Start the mission from the Game Master workflow.
-- The mission controller owns state and cleanup; the GM does not need to manually manage every spawned unit.
+1. Create a persistent scenario entity for the RHD mission framework.
+2. Add `RHD_GM_MissionFramework` to that entity.
+3. Create a Game Master integration entity and add `RHD_GM_MissionGameMasterComponent`.
+4. In the scenario-specific adapter, map mission IDs to the actual prefab/entity resources available in New Haven.
+5. Keep faction, vehicle, AI, marker and task resources in Workbench configuration/adapter code rather than in generic mission scripts.
+6. Ensure mission lifecycle calls occur on the authoritative server path.
 
-## Important architecture rule
+## Game Master workflow
 
-Mission-specific choices must be adapter/config driven. Do not hard-code faction, vehicle, civilian, or map-specific prefab identifiers into the generic mission controller.
+1. Place or activate a configured mission composition in Game Master.
+2. Select the desired mission configuration/difficulty.
+3. Start the mission through the scenario's GM integration.
+4. The controller creates mission-owned entities through the adapter.
+5. Runtime tasks can be added to the mission instance and updated by the adapter.
+6. The controller checks timeout, failure and success conditions.
+7. On completion/failure, the adapter is called to remove mission-owned entities.
 
-For jobs that involve civilians, reference existing civilian AI supplied by the scenario/framework instead of spawning job-specific civilian populations.
+## Why adapters are required
 
-## Current implementation status
+The generic layer must remain reusable. It must not assume a specific faction, vehicle, civilian AI, map position or prefab GUID. Those values belong to the New Haven scenario adapter and Workbench resources.
 
-The repository was empty when development started. The initial script layer now contains:
+For civilian/job content, use existing civilian AI supplied by the scenario/framework rather than creating a separate population specifically for the mission.
 
-- central framework component
-- mission definition model
-- mission registry
-- configurable mission settings
-- dynamic convoy mission lifecycle template
+## Important implementation note
 
-The next implementation step is the Workbench prefab/resource layer that exposes these controls directly to Game Master, followed by concrete spawn/task/marker adapters for the New Haven scenario.
+This repository began empty. The source layer is now established, but binary Workbench resources (`.et` and related compiled resource data) cannot be safely fabricated through GitHub text-file operations. Create those resources in Workbench and attach the provided script components. The repository deliberately keeps the source/adapter contract text-based so it remains reviewable and versionable.
