@@ -43,15 +43,22 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
         if (!config)
             return false;
 
+        RHD_GM_MissionTypeDefinition definition = RHD_GM_MissionTypeDefinition.Cast(instance.GetDefinition());
+        if (!definition)
+            return false;
+
+        if (!ValidateMissionAssetRequirements(definition.Type, config))
+            return false;
+
         if (m_Binding.PrimaryPrefab)
         {
-            if (!m_World.SpawnMissionVehicle(instance, m_Binding.PrimaryPrefab))
+            if (!m_World.SpawnMissionVehicle(instance, m_Binding.PrimaryPrefab) && !m_Binding.AllowMissingVehicle)
                 return false;
         }
 
         if (config.EnemyGroups > 0 && m_Binding.HostileGroupPrefab)
         {
-            if (!m_World.SpawnHostileGroups(instance, m_Binding.HostileGroupPrefab, config.EnemyGroups, config.EnemyUnitsPerGroup))
+            if (!m_World.SpawnHostileGroups(instance, m_Binding.HostileGroupPrefab, config.EnemyGroups, config.EnemyUnitsPerGroup) && !m_Binding.AllowMissingHostiles)
                 return false;
         }
 
@@ -63,15 +70,35 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
 
         if (m_Binding.SpawnObjectiveMarker && m_Binding.ObjectiveMarkerPrefab)
         {
-            if (!m_World.CreateMissionMarker(instance, m_Binding.ObjectiveMarkerPrefab, m_Binding.ObjectiveLabel))
+            if (!m_World.CreateMissionMarker(instance, m_Binding.ObjectiveMarkerPrefab, m_Binding.ObjectiveLabel) && !m_Binding.AllowMissingMarkers)
                 return false;
         }
 
         if (m_Binding.SpawnDestinationMarker && m_Binding.DestinationMarkerPrefab)
         {
-            if (!m_World.CreateMissionMarker(instance, m_Binding.DestinationMarkerPrefab, m_Binding.DestinationLabel))
+            if (!m_World.CreateMissionMarker(instance, m_Binding.DestinationMarkerPrefab, m_Binding.DestinationLabel) && !m_Binding.AllowMissingMarkers)
                 return false;
         }
+
+        return true;
+    }
+
+    protected bool ValidateMissionAssetRequirements(RHD_GM_MissionType type, RHD_GM_MissionConfig config)
+    {
+        if (!m_Binding || !config)
+            return false;
+
+        // Missing resources are allowed only when the binding explicitly opts in.
+        // This keeps the generic framework stock-asset-only while permitting a GM
+        // to use missions that operate on entities already placed in the scenario.
+        if (type == RHD_GM_MissionType.CONVOY && !m_Binding.PrimaryPrefab && !m_Binding.AllowMissingVehicle)
+            return false;
+
+        if (config.EnemyGroups > 0 && !m_Binding.HostileGroupPrefab && !m_Binding.AllowMissingHostiles)
+            return false;
+
+        if (config.ReinforcementGroups > 0 && !m_Binding.ReinforcementPrefab && !m_Binding.AllowMissingReinforcements)
+            return false;
 
         return true;
     }
@@ -101,6 +128,12 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
 
             case RHD_GM_MissionType.CIVILIAN_PROTECTION:
                 return m_World.IsCivilianProtectionComplete(instance);
+
+            case RHD_GM_MissionType.DEFENSE:
+                return m_World.IsLocationSecure(instance);
+
+            case RHD_GM_MissionType.PATROL:
+                return m_World.IsLocationSecure(instance);
         }
 
         return false;
