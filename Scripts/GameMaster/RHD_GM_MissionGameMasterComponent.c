@@ -6,6 +6,7 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
 {
     protected RHD_GM_MissionController m_Controller;
     protected ref RHD_GM_MissionActivation m_Activation;
+    protected ref RHD_GM_MissionRuntimeQuery m_Query;
     protected bool m_Bootstrapped;
 
     override void OnPostInit(IEntity owner)
@@ -14,6 +15,7 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
 
         m_Controller = new RHD_GM_MissionController();
         m_Activation = new RHD_GM_MissionActivation(m_Controller);
+        m_Query = new RHD_GM_MissionRuntimeQuery(m_Controller);
         RHD_GM_MissionBootstrap.RegisterDefaultMissions(m_Activation);
         m_Bootstrapped = true;
     }
@@ -26,6 +28,11 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     RHD_GM_MissionActivation GetActivation()
     {
         return m_Activation;
+    }
+
+    RHD_GM_MissionRuntimeQuery GetRuntimeQuery()
+    {
+        return m_Query;
     }
 
     RHD_GM_MissionEventDispatcher GetEventDispatcher()
@@ -71,6 +78,30 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
             return new array<string>();
 
         return m_Activation.GetLibrary().GetMissionIds();
+    }
+
+    RHD_GM_MissionInstance FindActiveMission(string missionId)
+    {
+        if (!m_Query)
+            return null;
+
+        return m_Query.FindActiveMission(missionId);
+    }
+
+    bool IsMissionActive(string missionId)
+    {
+        if (!m_Query)
+            return false;
+
+        return m_Query.IsMissionActive(missionId);
+    }
+
+    int GetActiveMissionCount()
+    {
+        if (!m_Query)
+            return 0;
+
+        return m_Query.GetActiveMissionCount();
     }
 
     // Call from the authoritative scenario/Game Master update path.
