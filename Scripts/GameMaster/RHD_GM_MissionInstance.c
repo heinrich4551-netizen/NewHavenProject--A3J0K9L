@@ -8,6 +8,7 @@ class RHD_GM_MissionInstance
     protected ref RHD_GM_ReinforcementState m_Reinforcements;
     protected bool m_Running;
     protected float m_ElapsedSeconds;
+    protected RHD_GM_MissionStatus m_Status;
 
     void RHD_GM_MissionInstance(RHD_GM_MissionDefinition definition, RHD_GM_MissionConfig config)
     {
@@ -19,6 +20,7 @@ class RHD_GM_MissionInstance
         m_Reinforcements = new RHD_GM_ReinforcementState();
         m_Running = false;
         m_ElapsedSeconds = 0.0;
+        m_Status = RHD_GM_MissionStatus.IDLE;
     }
 
     RHD_GM_MissionDefinition GetDefinition()
@@ -39,6 +41,11 @@ class RHD_GM_MissionInstance
     RHD_GM_ReinforcementState GetReinforcementState()
     {
         return m_Reinforcements;
+    }
+
+    RHD_GM_MissionStatus GetStatus()
+    {
+        return m_Status;
     }
 
     bool IsRunning()
@@ -143,14 +150,22 @@ class RHD_GM_MissionInstance
 
         m_Running = true;
         m_ElapsedSeconds = 0.0;
+        m_Status = RHD_GM_MissionStatus.RUNNING;
 
         if (m_Config && m_Reinforcements)
-            m_Reinforcements.Configure(m_Config.ReinforcementGroups, 0.0);
+            m_Reinforcements.Configure(m_Config.ReinforcementGroups, m_Config.ReinforcementDelaySeconds);
     }
 
-    void Stop()
+    void Stop(bool failed = false, bool timedOut = false)
     {
         m_Running = false;
+
+        if (timedOut)
+            m_Status = RHD_GM_MissionStatus.TIMED_OUT;
+        else if (failed)
+            m_Status = RHD_GM_MissionStatus.FAILED;
+        else
+            m_Status = RHD_GM_MissionStatus.COMPLETED;
     }
 
     void Tick(float deltaSeconds)
