@@ -8,6 +8,11 @@ class RHD_GM_MissionWorldAdapter
         return false;
     }
 
+    bool SpawnReinforcementGroup(RHD_GM_MissionInstance instance, string groupPrefab, int unitsPerGroup)
+    {
+        return SpawnHostileGroups(instance, groupPrefab, 1, unitsPerGroup);
+    }
+
     bool SpawnMissionVehicle(RHD_GM_MissionInstance instance, string vehiclePrefab)
     {
         return false;
