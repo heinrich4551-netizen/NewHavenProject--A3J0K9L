@@ -23,6 +23,11 @@ class RHD_GM_MissionController
         m_World = world;
     }
 
+    RHD_GM_MissionAdapter GetAdapter()
+    {
+        return m_Adapter;
+    }
+
     RHD_GM_MissionEventDispatcher GetEventDispatcher()
     {
         return m_Events;
@@ -38,21 +43,39 @@ class RHD_GM_MissionController
         if (!definition || !config || !definition.Enabled || !config.Enabled)
             return null;
 
+        if (FindActiveMission(definition.Id))
+            return null;
+
         config.ClampValues();
 
         RHD_GM_MissionInstance instance = new RHD_GM_MissionInstance(definition, config);
 
-        if (m_Adapter && !m_Adapter.CreateMissionEntities(instance))
+        if (!m_Adapter)
+            return null;
+
+        if (!m_Adapter.CreateMissionEntities(instance))
             return null;
 
         instance.Start();
         m_ActiveMissions.Insert(instance);
 
-        if (m_Adapter)
-            m_Adapter.OnMissionStarted(instance);
-
+        m_Adapter.OnMissionStarted(instance);
         Dispatch(new RHD_GM_MissionEvent(RHD_GM_MissionEventType.STARTED, GetMissionId(instance), "Mission started"));
         return instance;
+    }
+
+    RHD_GM_MissionInstance FindActiveMission(string missionId)
+    {
+        if (!missionId)
+            return null;
+
+        foreach (RHD_GM_MissionInstance instance : m_ActiveMissions)
+        {
+            if (instance && instance.IsRunning() && instance.GetDefinition() && instance.GetDefinition().Id == missionId)
+                return instance;
+        }
+
+        return null;
     }
 
     void StopMission(RHD_GM_MissionInstance instance, bool failed = false, bool timedOut = false)
@@ -60,7 +83,7 @@ class RHD_GM_MissionController
         if (!instance || !instance.IsRunning())
             return;
 
-        instance.Stop();
+        instance.Stop(failed, timedOut);
 
         if (m_Adapter)
         {
