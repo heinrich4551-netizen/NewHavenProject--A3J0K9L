@@ -9,5 +9,8 @@ class RHD_GM_MissionBootstrap
         activation.RegisterMission(RHD_GM_MissionPresetFactory.CreateSecurePreset());
         activation.RegisterMission(RHD_GM_MissionPresetFactory.CreateRecoveryPreset());
         activation.RegisterMission(RHD_GM_MissionPresetFactory.CreateCivilianProtectionPreset());
+        activation.RegisterMission(RHD_GM_MissionPresetFactory.CreateDefensePreset());
+        activation.RegisterMission(RHD_GM_MissionPresetFactory.CreatePatrolPreset());
+        activation.RegisterMission(RHD_GM_MissionPresetFactory.CreateEliminationPreset());
     }
 }
