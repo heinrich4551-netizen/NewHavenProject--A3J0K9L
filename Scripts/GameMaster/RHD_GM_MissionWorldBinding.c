@@ -1,5 +1,8 @@
 class RHD_GM_MissionWorldBinding
 {
+    // All references are intended to point at assets already shipped with
+    // Arma Reforger and visible in the active Workbench project.
+    // No prefab GUIDs are hard-coded here.
     string PrimaryPrefab;
     string HostileGroupPrefab;
     string ReinforcementPrefab;
@@ -15,6 +18,10 @@ class RHD_GM_MissionWorldBinding
     bool BindExistingCivilians = true;
     bool SpawnObjectiveMarker = true;
     bool SpawnDestinationMarker = true;
+    bool AllowMissingVehicle = true;
+    bool AllowMissingHostiles = true;
+    bool AllowMissingReinforcements = true;
+    bool AllowMissingMarkers = true;
 
     void Validate()
     {
@@ -23,5 +30,30 @@ class RHD_GM_MissionWorldBinding
 
         if (!DestinationLabel)
             DestinationLabel = "Mission Destination";
+    }
+
+    bool HasPrimaryAsset()
+    {
+        return PrimaryPrefab != "";
+    }
+
+    bool HasHostileAsset()
+    {
+        return HostileGroupPrefab != "";
+    }
+
+    bool HasReinforcementAsset()
+    {
+        return ReinforcementPrefab != "";
+    }
+
+    bool HasCivilianAsset()
+    {
+        return CivilianGroupPrefab != "";
+    }
+
+    bool HasMarkerAssets()
+    {
+        return StartMarkerPrefab != "" || ObjectiveMarkerPrefab != "" || DestinationMarkerPrefab != "";
     }
 }
