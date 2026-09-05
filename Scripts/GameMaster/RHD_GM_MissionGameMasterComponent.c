@@ -7,6 +7,7 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     protected RHD_GM_MissionController m_Controller;
     protected ref RHD_GM_MissionActivation m_Activation;
     protected ref RHD_GM_MissionRuntimeQuery m_Query;
+    protected RHD_GM_MissionScenarioAdapter m_ScenarioAdapter;
     protected bool m_Bootstrapped;
 
     override void OnPostInit(IEntity owner)
@@ -35,6 +36,11 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
         return m_Query;
     }
 
+    RHD_GM_MissionScenarioAdapter GetScenarioAdapter()
+    {
+        return m_ScenarioAdapter;
+    }
+
     RHD_GM_MissionEventDispatcher GetEventDispatcher()
     {
         if (!m_Activation)
@@ -46,6 +52,39 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     bool IsBootstrapped()
     {
         return m_Bootstrapped;
+    }
+
+    bool IsScenarioConfigured()
+    {
+        return m_ScenarioAdapter != null && m_Controller != null && m_Controller.GetAdapter() == m_ScenarioAdapter;
+    }
+
+    bool ConfigureScenario(RHD_GM_MissionWorldAdapter world, RHD_GM_MissionWorldBinding binding)
+    {
+        if (!m_Controller || !world || !RHD_GM_MissionValidation.ValidateBinding(binding))
+            return false;
+
+        RHD_GM_MissionScenarioAdapter adapter = new RHD_GM_MissionScenarioAdapter(world, binding);
+        m_ScenarioAdapter = adapter;
+
+        m_Controller.SetWorldAdapter(world);
+        m_Controller.SetAdapter(adapter);
+        return true;
+    }
+
+    void SetMissionAdapter(RHD_GM_MissionAdapter adapter)
+    {
+        if (m_Controller)
+            m_Controller.SetAdapter(adapter);
+
+        if (adapter != m_ScenarioAdapter)
+            m_ScenarioAdapter = null;
+    }
+
+    void SetMissionWorldAdapter(RHD_GM_MissionWorldAdapter world)
+    {
+        if (m_Controller)
+            m_Controller.SetWorldAdapter(world);
     }
 
     bool RegisterMission(RHD_GM_MissionComposition composition)
@@ -70,6 +109,22 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
             return false;
 
         return m_Activation.StopMission(instance, failed);
+    }
+
+    bool CompleteObjective(RHD_GM_MissionInstance instance, string objectiveId)
+    {
+        if (!m_Controller)
+            return false;
+
+        return m_Controller.CompleteObjective(instance, objectiveId);
+    }
+
+    bool FailObjective(RHD_GM_MissionInstance instance, string objectiveId)
+    {
+        if (!m_Controller)
+            return false;
+
+        return m_Controller.FailObjective(instance, objectiveId);
     }
 
     array<string> GetAvailableMissionIds()
