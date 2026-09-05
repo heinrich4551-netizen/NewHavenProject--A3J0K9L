@@ -33,4 +33,12 @@ class RHD_GM_MissionObjective
     {
         return Completed || Failed;
     }
+
+    RHD_GM_MissionObjective Clone()
+    {
+        RHD_GM_MissionObjective copy = new RHD_GM_MissionObjective(Id, Title, Description, Required);
+        copy.Completed = false;
+        copy.Failed = false;
+        return copy;
+    }
 }
