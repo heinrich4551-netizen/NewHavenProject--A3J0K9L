@@ -53,6 +53,11 @@ class RHD_GM_MissionWorldAdapter
         return false;
     }
 
+    bool IsCivilianProtectionComplete(RHD_GM_MissionInstance instance)
+    {
+        return false;
+    }
+
     bool AreProtectedCiviliansAlive(RHD_GM_MissionInstance instance)
     {
         return true;
