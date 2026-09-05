@@ -3,6 +3,7 @@ class RHD_GM_MissionInstance
     protected RHD_GM_MissionDefinition m_Definition;
     protected ref RHD_GM_MissionConfig m_Config;
     protected ref array<ref RHD_GM_MissionTask> m_Tasks;
+    protected ref RHD_GM_MissionWorldState m_WorldState;
     protected bool m_Running;
     protected float m_ElapsedSeconds;
 
@@ -11,6 +12,7 @@ class RHD_GM_MissionInstance
         m_Definition = definition;
         m_Config = config;
         m_Tasks = new array<ref RHD_GM_MissionTask>();
+        m_WorldState = new RHD_GM_MissionWorldState();
         m_Running = false;
         m_ElapsedSeconds = 0.0;
     }
@@ -23,6 +25,11 @@ class RHD_GM_MissionInstance
     RHD_GM_MissionConfig GetConfig()
     {
         return m_Config;
+    }
+
+    RHD_GM_MissionWorldState GetWorldState()
+    {
+        return m_WorldState;
     }
 
     bool IsRunning()
