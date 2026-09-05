@@ -27,9 +27,14 @@ class RHD_GM_MissionValidation
 
         binding.Validate();
 
+        // A scenario binding must reference at least one real asset selected
+        // from the active Arma Reforger Workbench project.
         if (!binding.PrimaryPrefab && !binding.HostileGroupPrefab && !binding.CivilianGroupPrefab)
             return false;
 
+        // Optional stock resources may be omitted when the selected mission
+        // does not require them. The adapter's AllowMissing* flags control
+        // whether those optional systems are expected at runtime.
         return true;
     }
 }
