@@ -24,6 +24,16 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
             m_Binding.Validate();
     }
 
+    RHD_GM_MissionWorldAdapter GetWorldAdapter()
+    {
+        return m_World;
+    }
+
+    RHD_GM_MissionWorldBinding GetBinding()
+    {
+        return m_Binding;
+    }
+
     override bool CreateMissionEntities(RHD_GM_MissionInstance instance)
     {
         if (!instance || !m_World || !m_Binding)
