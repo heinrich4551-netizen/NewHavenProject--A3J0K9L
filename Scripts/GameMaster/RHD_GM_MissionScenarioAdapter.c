@@ -33,13 +33,11 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
         if (!config)
             return false;
 
-        bool created = true;
-
         if (m_Binding.PrimaryPrefab)
-            created = m_World.SpawnMissionVehicle(instance, m_Binding.PrimaryPrefab);
-
-        if (!created)
-            return false;
+        {
+            if (!m_World.SpawnMissionVehicle(instance, m_Binding.PrimaryPrefab))
+                return false;
+        }
 
         if (config.EnemyGroups > 0 && m_Binding.HostileGroupPrefab)
         {
@@ -80,7 +78,7 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
         switch (definition.Type)
         {
             case RHD_GM_MissionType.CONVOY:
-                return m_World.IsEntityAtDestination(instance.GetDefinition() ? null : null);
+                return m_World.IsEntityAtDestination(instance.GetWorldState().GetPrimaryEntity());
 
             case RHD_GM_MissionType.SECURE:
                 return m_World.IsLocationSecure(instance);
