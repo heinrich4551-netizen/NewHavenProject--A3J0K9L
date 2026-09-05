@@ -7,6 +7,9 @@ class RHD_GM_MissionCatalog
         ids.Insert("RHD_SECURE");
         ids.Insert("RHD_RECOVERY");
         ids.Insert("RHD_CIVILIAN_PROTECTION");
+        ids.Insert("RHD_DEFENSE");
+        ids.Insert("RHD_PATROL");
+        ids.Insert("RHD_ELIMINATION");
         return ids;
     }
 
@@ -23,6 +26,15 @@ class RHD_GM_MissionCatalog
 
         if (missionId == "RHD_CIVILIAN_PROTECTION")
             return RHD_GM_MissionPresetFactory.CreateCivilianProtectionPreset();
+
+        if (missionId == "RHD_DEFENSE")
+            return RHD_GM_MissionPresetFactory.CreateDefensePreset();
+
+        if (missionId == "RHD_PATROL")
+            return RHD_GM_MissionPresetFactory.CreatePatrolPreset();
+
+        if (missionId == "RHD_ELIMINATION")
+            return RHD_GM_MissionPresetFactory.CreateEliminationPreset();
 
         return null;
     }
