@@ -72,6 +72,11 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
         return true;
     }
 
+    bool ConfigureStockScenario(RHD_GM_StockScenarioWorldAdapter world, RHD_GM_MissionWorldBinding binding)
+    {
+        return ConfigureScenario(world, binding);
+    }
+
     void SetMissionAdapter(RHD_GM_MissionAdapter adapter)
     {
         if (m_Controller)
