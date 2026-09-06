@@ -153,38 +153,43 @@ class RHD_GM_StockScenarioWorldAdapter : RHD_GM_MissionWorldAdapter
         return state;
     }
 
+    bool PrepareMission(RHD_GM_MissionInstance instance)
+    {
+        return GetOrCreateState(instance) != null;
+    }
+
     bool SpawnHostileGroups(RHD_GM_MissionInstance instance, string groupPrefab, int groupCount, int unitsPerGroup)
     {
-        // This stock-only adapter deliberately does not fabricate or dynamically
-        // load resources. Hostile groups are supplied by the active Workbench
-        // scenario and registered through RegisterHostile().
-        return instance != null && groupPrefab != "" && groupCount > 0 && unitsPerGroup > 0;
+        // Dynamic resource spawning is intentionally left to the exact engine
+        // integration for the installed Reforger version. This adapter never
+        // pretends that a prefab string has created entities.
+        return false;
     }
 
     bool SpawnReinforcementGroup(RHD_GM_MissionInstance instance, string groupPrefab, int unitsPerGroup)
     {
-        return SpawnHostileGroups(instance, groupPrefab, 1, unitsPerGroup);
+        return false;
     }
 
     bool SpawnMissionVehicle(RHD_GM_MissionInstance instance, string vehiclePrefab)
     {
-        // The vehicle must be an existing stock Reforger entity supplied by the
-        // Workbench scenario and registered with RegisterPrimaryEntity().
-        return instance != null && vehiclePrefab != "" && FindState(instance) != null && FindState(instance).GetPrimaryEntity() != null;
+        // Mission vehicles are existing stock entities registered with
+        // RegisterPrimaryEntity().
+        RHD_GM_StockMissionWorldState state = FindState(instance);
+        return state != null && vehiclePrefab != "" && state.GetPrimaryEntity() != null;
     }
 
     bool BindExistingCivilianGroup(RHD_GM_MissionInstance instance, string civilianGroupPrefab)
     {
-        // Existing civilian AI is never replaced. The scenario registers the
-        // relevant stock civilian entities with RegisterCivilian().
-        return instance != null && civilianGroupPrefab != "" && FindState(instance) != null;
+        RHD_GM_StockMissionWorldState state = FindState(instance);
+        return state != null && civilianGroupPrefab != "" && state.GetCivilians().Count() > 0;
     }
 
     bool CreateMissionMarker(RHD_GM_MissionInstance instance, string markerPrefab, string label)
     {
-        // Marker creation remains Workbench-owned. This method acknowledges a
-        // configured stock marker without creating a custom resource.
-        return instance != null && markerPrefab != "" && label != "";
+        // Marker placement remains owned by Workbench/scenario integration.
+        // No custom marker resource is created here.
+        return false;
     }
 
     bool IsEntityAlive(IEntity entity)
@@ -237,7 +242,7 @@ class RHD_GM_StockScenarioWorldAdapter : RHD_GM_MissionWorldAdapter
     bool AreProtectedCiviliansAlive(RHD_GM_MissionInstance instance)
     {
         RHD_GM_StockMissionWorldState state = FindState(instance);
-        if (!state)
+        if (!state || state.GetCivilians().Count() == 0)
             return false;
 
         foreach (IEntity civilian : state.GetCivilians())
@@ -255,8 +260,7 @@ class RHD_GM_StockScenarioWorldAdapter : RHD_GM_MissionWorldAdapter
         if (!state)
             return;
 
-        // Existing stock scenario entities are not deleted by this adapter.
-        // Only mission-owned references are released from the adapter state.
+        // Existing stock scenario entities are never deleted here.
         m_Missions.RemoveItem(state);
     }
 
