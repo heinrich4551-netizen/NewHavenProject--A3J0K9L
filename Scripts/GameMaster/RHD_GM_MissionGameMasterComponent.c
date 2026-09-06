@@ -8,6 +8,7 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     protected ref RHD_GM_MissionActivation m_Activation;
     protected ref RHD_GM_MissionRuntimeQuery m_Query;
     protected RHD_GM_MissionScenarioAdapter m_ScenarioAdapter;
+    protected RHD_GM_StockScenarioWorldAdapter m_StockWorld;
     protected bool m_Bootstrapped;
 
     override void OnPostInit(IEntity owner)
@@ -21,38 +22,20 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
         m_Bootstrapped = true;
     }
 
-    RHD_GM_MissionController GetController()
-    {
-        return m_Controller;
-    }
-
-    RHD_GM_MissionActivation GetActivation()
-    {
-        return m_Activation;
-    }
-
-    RHD_GM_MissionRuntimeQuery GetRuntimeQuery()
-    {
-        return m_Query;
-    }
-
-    RHD_GM_MissionScenarioAdapter GetScenarioAdapter()
-    {
-        return m_ScenarioAdapter;
-    }
+    RHD_GM_MissionController GetController() { return m_Controller; }
+    RHD_GM_MissionActivation GetActivation() { return m_Activation; }
+    RHD_GM_MissionRuntimeQuery GetRuntimeQuery() { return m_Query; }
+    RHD_GM_MissionScenarioAdapter GetScenarioAdapter() { return m_ScenarioAdapter; }
+    RHD_GM_StockScenarioWorldAdapter GetStockWorldAdapter() { return m_StockWorld; }
 
     RHD_GM_MissionEventDispatcher GetEventDispatcher()
     {
         if (!m_Activation)
             return null;
-
         return m_Activation.GetEvents();
     }
 
-    bool IsBootstrapped()
-    {
-        return m_Bootstrapped;
-    }
+    bool IsBootstrapped() { return m_Bootstrapped; }
 
     bool IsScenarioConfigured()
     {
@@ -66,15 +49,81 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
 
         RHD_GM_MissionScenarioAdapter adapter = new RHD_GM_MissionScenarioAdapter(world, binding);
         m_ScenarioAdapter = adapter;
-
         m_Controller.SetWorldAdapter(world);
         m_Controller.SetAdapter(adapter);
         return true;
     }
 
-    bool ConfigureStockScenario(RHD_GM_StockScenarioWorldAdapter world, RHD_GM_MissionWorldBinding binding)
+    // Plug-and-play stock entry point. The binding still contains only assets
+    // selected from the active Arma Reforger Workbench project.
+    bool ConfigureStockScenario(RHD_GM_MissionWorldBinding binding)
     {
-        return ConfigureScenario(world, binding);
+        if (!binding)
+            return false;
+
+        m_StockWorld = new RHD_GM_StockScenarioWorldAdapter();
+        return ConfigureScenario(m_StockWorld, binding);
+    }
+
+    bool RegisterStockPrimaryEntity(RHD_GM_MissionInstance instance, IEntity entity)
+    {
+        if (!m_StockWorld)
+            return false;
+        return m_StockWorld.RegisterPrimaryEntity(instance, entity);
+    }
+
+    bool RegisterStockHostile(RHD_GM_MissionInstance instance, IEntity entity)
+    {
+        if (!m_StockWorld)
+            return false;
+        return m_StockWorld.RegisterHostile(instance, entity);
+    }
+
+    bool RegisterExistingStockCivilian(RHD_GM_MissionInstance instance, IEntity entity)
+    {
+        if (!m_StockWorld)
+            return false;
+        return m_StockWorld.RegisterCivilian(instance, entity);
+    }
+
+    bool SetStockMissionDestinationReached(RHD_GM_MissionInstance instance, bool value = true)
+    {
+        if (!m_StockWorld)
+            return false;
+        m_StockWorld.SetDestinationReached(instance, value);
+        return true;
+    }
+
+    bool SetStockMissionLocationSecure(RHD_GM_MissionInstance instance, bool value = true)
+    {
+        if (!m_StockWorld)
+            return false;
+        m_StockWorld.SetLocationSecure(instance, value);
+        return true;
+    }
+
+    bool SetStockMissionRecoveryComplete(RHD_GM_MissionInstance instance, bool value = true)
+    {
+        if (!m_StockWorld)
+            return false;
+        m_StockWorld.SetRecoveryComplete(instance, value);
+        return true;
+    }
+
+    bool SetStockMissionEliminationComplete(RHD_GM_MissionInstance instance, bool value = true)
+    {
+        if (!m_StockWorld)
+            return false;
+        m_StockWorld.SetObjectiveEliminated(instance, value);
+        return true;
+    }
+
+    bool SetStockCivilianProtectionComplete(RHD_GM_MissionInstance instance, bool value = true)
+    {
+        if (!m_StockWorld)
+            return false;
+        m_StockWorld.SetCivilianProtectionComplete(instance, value);
+        return true;
     }
 
     void SetMissionAdapter(RHD_GM_MissionAdapter adapter)
@@ -83,7 +132,10 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
             m_Controller.SetAdapter(adapter);
 
         if (adapter != m_ScenarioAdapter)
+        {
             m_ScenarioAdapter = null;
+            m_StockWorld = null;
+        }
     }
 
     void SetMissionWorldAdapter(RHD_GM_MissionWorldAdapter world)
@@ -96,7 +148,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Activation)
             return false;
-
         return m_Activation.RegisterMission(composition);
     }
 
@@ -104,7 +155,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Activation)
             return null;
-
         return m_Activation.StartMission(missionId);
     }
 
@@ -112,7 +162,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Activation)
             return false;
-
         return m_Activation.StopMission(instance, failed);
     }
 
@@ -120,7 +169,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Controller)
             return false;
-
         return m_Controller.CompleteObjective(instance, objectiveId);
     }
 
@@ -128,7 +176,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Controller)
             return false;
-
         return m_Controller.FailObjective(instance, objectiveId);
     }
 
@@ -136,7 +183,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Activation || !m_Activation.GetLibrary())
             return new array<string>();
-
         return m_Activation.GetLibrary().GetMissionIds();
     }
 
@@ -144,7 +190,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Query)
             return null;
-
         return m_Query.FindActiveMission(missionId);
     }
 
@@ -152,7 +197,6 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Query)
             return false;
-
         return m_Query.IsMissionActive(missionId);
     }
 
@@ -160,11 +204,9 @@ class RHD_GM_MissionGameMasterComponent : ScriptComponent
     {
         if (!m_Query)
             return 0;
-
         return m_Query.GetActiveMissionCount();
     }
 
-    // Call from the authoritative scenario/Game Master update path.
     void TickMissions(float deltaSeconds)
     {
         if (m_Controller)
