@@ -58,17 +58,9 @@ class RHD_GM_MissionActivation
         RHD_GM_MissionTypeDefinition definition = new RHD_GM_MissionTypeDefinition(composition.Id, composition.DisplayName, ResolveMissionType(composition.Id), composition.Description);
         definition.Enabled = composition.MissionConfig && composition.MissionConfig.Enabled;
 
-        RHD_GM_MissionInstance instance = m_Controller.StartMission(definition, composition.MissionConfig);
-        if (!instance)
-            return null;
-
-        foreach (RHD_GM_MissionObjective objective : composition.Objectives)
-        {
-            if (objective)
-                instance.AddObjective(objective.Clone());
-        }
-
-        return instance;
+        // The controller clones objectives before creating world entities so all
+        // adapter callbacks observe the complete mission definition.
+        return m_Controller.StartMission(definition, composition.MissionConfig, composition.Objectives);
     }
 
     bool StopMission(RHD_GM_MissionInstance instance, bool failed = false)
