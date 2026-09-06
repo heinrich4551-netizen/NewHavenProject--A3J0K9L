@@ -38,7 +38,7 @@ class RHD_GM_MissionController
         return m_ActiveMissions;
     }
 
-    RHD_GM_MissionInstance StartMission(RHD_GM_MissionDefinition definition, RHD_GM_MissionConfig config)
+    RHD_GM_MissionInstance StartMission(RHD_GM_MissionDefinition definition, RHD_GM_MissionConfig config, array<ref RHD_GM_MissionObjective> objectives = null)
     {
         if (!definition || !config || !definition.Enabled || !config.Enabled)
             return null;
@@ -52,6 +52,18 @@ class RHD_GM_MissionController
 
         if (!m_Adapter)
             return null;
+
+        // Objectives are part of the instance before any world entities are
+        // created or start callbacks fire. This guarantees adapters can safely
+        // inspect mission objectives during initialization.
+        if (objectives)
+        {
+            foreach (RHD_GM_MissionObjective objective : objectives)
+            {
+                if (objective)
+                    instance.AddObjective(objective.Clone());
+            }
+        }
 
         if (!m_Adapter.CreateMissionEntities(instance))
             return null;
