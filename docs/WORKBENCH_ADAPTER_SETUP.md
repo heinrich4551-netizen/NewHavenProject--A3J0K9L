@@ -2,11 +2,28 @@
 
 This is the boundary between the reusable Game Master mission framework and actual New Haven world resources.
 
+## Stock-only runtime adapter
+
+The repository now includes `RHD_GM_StockScenarioWorldAdapter`.
+
+It is deliberately designed around **existing stock Arma Reforger entities supplied by the active Workbench scenario**. It does not invent prefab paths, GUIDs, factions, vehicles, civilians, markers, or map coordinates.
+
+The adapter provides a concrete runtime state layer for:
+
+- primary mission entities
+- hostile entities
+- existing civilian entities
+- convoy destination state
+- secure-location state
+- recovery state
+- elimination state
+- civilian-protection state
+
 ## Required scenario pieces
 
-Create a persistent scenario/framework entity and provide a concrete implementation of `RHD_GM_MissionWorldAdapter`.
+Create a persistent scenario/framework entity and configure the Game Master component with the stock adapter.
 
-Configure a `RHD_GM_MissionWorldBinding` for each mission family with:
+Configure a `RHD_GM_MissionWorldBinding` using resources selected from the active Workbench project:
 
 - Primary mission prefab, when applicable
 - Hostile group prefab
@@ -18,30 +35,60 @@ Configure a `RHD_GM_MissionWorldBinding` for each mission family with:
 
 Do not put guessed GUIDs into the generic scripts.
 
-## World adapter responsibilities
+## Stock entity registration
 
-The concrete adapter is responsible for the actual engine/resource operations:
+`RHD_GM_StockScenarioWorldAdapter` exposes registration methods for entities that already exist in the scenario:
 
-1. Spawn the configured hostile groups.
-2. Spawn the configured mission vehicle/object.
-3. Bind to existing civilian AI when a civilian objective is used.
-4. Create the configured mission markers.
-5. Determine whether the mission entity is alive.
-6. Determine whether a destination was reached.
-7. Determine whether a location is secure.
-8. Determine whether a recovery objective is complete.
-9. Determine whether an elimination objective is complete.
-10. Determine whether protected civilians remain alive.
-11. Remove only entities owned by the completed/failed mission.
+- `RegisterPrimaryEntity(instance, entity)`
+- `RegisterHostile(instance, entity)`
+- `RegisterCivilian(instance, entity)`
+
+Mission state can then be updated by authoritative scenario logic with:
+
+- `SetDestinationReached(instance, true)`
+- `SetLocationSecure(instance, true)`
+- `SetRecoveryComplete(instance, true)`
+- `SetObjectiveEliminated(instance, true)`
+- `SetCivilianProtectionComplete(instance, true)`
+
+These methods allow existing Reforger systems, scenario logic, or GM integrations to report world events without the framework manufacturing assets.
+
+## Important spawning boundary
+
+The stock adapter intentionally does **not** fake dynamic spawning by treating a prefab string as an already-created entity. The current source contract acknowledges configured stock resources, while actual entity creation must be performed by a Workbench/engine integration that uses the exact APIs available to the installed Arma Reforger version.
+
+This avoids shipping unverified engine calls or fabricated resource identifiers.
+
+## Mission conditions
+
+- Convoy succeeds when the registered primary entity is alive and `SetDestinationReached()` has been reported.
+- Secure/Defense/Patrol succeed when `SetLocationSecure()` has been reported and all required mission objectives are complete.
+- Recovery succeeds when `SetRecoveryComplete()` has been reported and required objectives are complete.
+- Elimination succeeds when the registered hostile entities are no longer alive, or `SetObjectiveEliminated()` has been reported.
+- Civilian Protection succeeds when `SetCivilianProtectionComplete()` has been reported and required objectives are complete.
+- Civilian Protection fails when a registered protected civilian reference is no longer valid.
+
+## Cleanup
+
+The stock adapter never deletes scenario-owned stock entities. It only releases its runtime tracking state when a mission ends. This prevents a mission cleanup operation from accidentally deleting unrelated scenario content.
+
+## GM component
+
+`RHD_GM_MissionGameMasterComponent.ConfigureStockScenario()` is the convenience entry point for assigning the stock world adapter and mission binding.
 
 ## Why this layer exists
 
-Workbench resource references and exact world-spawn APIs vary by scenario composition. Keeping those operations behind one adapter makes the mission definitions reusable and prevents the framework from depending on fabricated or map-specific identifiers.
+Workbench resource references and exact world-spawn APIs vary by scenario composition and installed game version. Keeping resource selection and runtime state behind one adapter makes the mission definitions reusable without embedding fabricated or map-specific identifiers.
 
 ## GM workflow
 
-After the adapter/resource layer is configured, a Game Master should only need to select a mission preset, choose the configured scenario location/resources, adjust difficulty if desired, and activate it. The runtime controller then owns timeout, objective state, success/failure checks, reinforcement state, and cleanup.
+1. Place the stock Reforger entities you want to use in the scenario.
+2. Create the persistent mission/Game Master integration entity.
+3. Configure the mission binding with stock resources using Workbench's resource picker.
+4. Create/configure `RHD_GM_StockScenarioWorldAdapter` in the authoritative scenario integration.
+5. Register the relevant existing stock entities with the active mission instance.
+6. Report destination/security/recovery/elimination/protection events to the adapter.
+7. Call `TickMissions(deltaSeconds)` from the authoritative runtime path.
+8. Activate missions through `StartMissionById()`.
 
-## Important
-
-The source repository can define the contracts and reusable logic, but Workbench-authored prefabs/resources must still be created and wired in the actual Arma Reforger project. This repository does not pretend that text files alone create those binary Workbench assets.
+No new game assets are required by this adapter.
