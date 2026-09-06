@@ -1,0 +1,375 @@
+RHD Game Master Mission Framework - Enfusion Workbench Setup
+============================================================
+
+Purpose
+-------
+This guide explains how to wire the RHD Game Master mission framework into an Arma Reforger scenario using Enfusion Workbench.
+
+IMPORTANT STOCK-ASSET RULE
+--------------------------
+Use only assets already shipped with Arma Reforger and available through the active Workbench project/resource browser.
+
+Do NOT create or substitute custom:
+- vehicles
+- weapons
+- factions
+- infantry
+- civilian AI
+- AI groups
+- markers
+- map objects
+
+Do NOT invent prefab GUIDs or resource paths. Select real resources with Workbench's resource picker.
+
+The RHD source framework provides mission logic and state management. Workbench remains responsible for the actual scenario entities/resources.
+
+1. Open the project
+-------------------
+1. Install/open Arma Reforger Tools through Steam.
+2. Launch Enfusion Workbench.
+3. Open the Arma Reforger mod/project containing this repository.
+4. Confirm Scripts/GameMaster/ is included in the project's script compilation.
+
+Important source files include:
+- Scripts/GameMaster/RHD_GM_MissionGameMasterComponent.c
+- Scripts/GameMaster/RHD_GM_MissionController.c
+- Scripts/GameMaster/RHD_GM_MissionActivation.c
+- Scripts/GameMaster/RHD_GM_StockScenarioWorldAdapter.c
+- Scripts/GameMaster/RHD_GM_MissionWorldBinding.c
+
+2. Open the New Haven scenario
+------------------------------
+Open the actual New Haven scenario you intend to run.
+
+Keep the normal Arma Reforger scenario systems and existing stock entities. The RHD framework is intended to work alongside them rather than replacing them.
+
+A useful hierarchy concept is:
+
+New Haven Scenario
+  - Game Master
+  - RHD Mission Framework / runtime entity
+  - Existing scenario systems
+  - Existing AI
+  - Existing civilian population, if used
+  - Existing stock vehicles/world entities
+
+3. Add the RHD Game Master component
+------------------------------------
+Select a persistent scenario entity and add:
+
+RHD_GM_MissionGameMasterComponent
+
+Class name:
+RHD_GM_MissionGameMasterComponent
+
+On initialization this component creates the mission controller, activation system, runtime query, and default mission library.
+
+The default mission IDs are:
+- RHD_CONVOY
+- RHD_SECURE
+- RHD_RECOVERY
+- RHD_CIVILIAN_PROTECTION
+- RHD_DEFENSE
+- RHD_PATROL
+- RHD_ELIMINATION
+
+4. Configure a stock asset binding
+----------------------------------
+The framework uses RHD_GM_MissionWorldBinding as the configuration boundary between mission logic and actual Workbench resources.
+
+Relevant fields:
+- PrimaryPrefab
+- HostileGroupPrefab
+- ReinforcementPrefab
+- CivilianGroupPrefab
+- StartMarkerPrefab
+- ObjectiveMarkerPrefab
+- DestinationMarkerPrefab
+
+Select these using the Workbench resource picker. Every selected resource must already exist in Arma Reforger.
+
+For an initial test, use an existing stock vehicle, existing stock hostile group/resource, and existing civilian group/resource where applicable.
+
+Recommended first-test settings:
+- BindExistingCivilians = true
+- SpawnObjectiveMarker = false
+- SpawnDestinationMarker = false
+- AllowMissingVehicle = true
+- AllowMissingHostiles = true
+- AllowMissingReinforcements = true
+- AllowMissingMarkers = true
+
+This keeps the first test focused on mission lifecycle rather than marker configuration.
+
+5. Configure the stock scenario runtime
+----------------------------------------
+Use the component's stock entry point:
+
+ConfigureStockScenario(binding)
+
+This creates the stock-only world adapter and connects it to the mission controller.
+
+Conceptually:
+
+Workbench stock entities
+        |
+        v
+RHD_GM_StockScenarioWorldAdapter
+        |
+        v
+RHD_GM_MissionScenarioAdapter
+        |
+        v
+RHD_GM_MissionController
+        |
+        v
+Mission definitions / objectives / timers / events
+
+6. Start with RHD_SECURE
+-------------------------
+Do not configure all seven mission types at once. First prove the runtime with RHD_SECURE.
+
+Start it through:
+
+StartMissionById("RHD_SECURE")
+
+The mission should create a mission instance and enter RUNNING state when the scenario adapter is correctly configured.
+
+7. Register existing stock entities
+------------------------------------
+The stock adapter tracks existing scenario entities. It does not fabricate replacement assets.
+
+Register an existing stock primary vehicle/entity with:
+
+RegisterStockPrimaryEntity(instance, entity)
+
+Register existing stock hostile entities with:
+
+RegisterStockHostile(instance, hostileEntity)
+
+Register existing civilian entities with:
+
+RegisterExistingStockCivilian(instance, civilianEntity)
+
+These calls connect real entities already present in the scenario to the mission's world state.
+
+8. Secure mission completion test
+---------------------------------
+For the first RHD_SECURE test, have your scenario-side logic determine when the area is actually secure.
+
+Then set the mission state with:
+
+SetStockMissionLocationSecure(instance, true)
+
+The mission adapter evaluates the secure condition together with the required mission objectives.
+
+9. Test the other mission state controls
+-----------------------------------------
+The stock component exposes these runtime controls:
+
+Convoy destination:
+SetStockMissionDestinationReached(instance, true)
+
+Recovery:
+SetStockMissionRecoveryComplete(instance, true)
+
+Elimination:
+SetStockMissionEliminationComplete(instance, true)
+
+Civilian protection:
+SetStockCivilianProtectionComplete(instance, true)
+
+Secure/Defense/Patrol location state:
+SetStockMissionLocationSecure(instance, true)
+
+These controls are intended to be called by authoritative scenario/gameplay logic after the real world condition has occurred.
+
+10. Convoy setup
+----------------
+For RHD_CONVOY you need an existing stock vehicle and existing stock hostile entities/groups.
+
+Register the convoy vehicle as the primary mission entity:
+
+RegisterStockPrimaryEntity(instance, vehicle)
+
+Register relevant hostile entities:
+
+RegisterStockHostile(instance, hostileEntity)
+
+When your actual scenario logic determines that the convoy has reached its destination:
+
+SetStockMissionDestinationReached(instance, true)
+
+The generic framework deliberately does not assume a specific faction, vehicle, map coordinate, or prefab GUID.
+
+11. Civilian protection setup
+-----------------------------
+Use the existing civilian population/AI supplied by the scenario.
+
+Register the civilians that belong to the mission:
+
+RegisterExistingStockCivilian(instance, civilianEntity)
+
+Do not replace the existing civilian population with custom civilian assets.
+
+When the actual protection condition has been met:
+
+SetStockCivilianProtectionComplete(instance, true)
+
+12. Elimination setup
+---------------------
+Register the actual stock hostile entities assigned to the mission:
+
+RegisterStockHostile(instance, hostileEntity)
+
+The current stock adapter intentionally uses a conservative entity-validity check. IEntity != null is not treated as a verified health/death API.
+
+Therefore, automatic death detection should only be added after the correct Enfusion/Reforger health API is verified in the target project. Until then, use authoritative scenario logic to call:
+
+SetStockMissionEliminationComplete(instance, true)
+
+13. Recovery setup
+------------------
+Use existing stock scenario entities for the recovery objective.
+
+When your actual gameplay logic determines recovery is complete:
+
+SetStockMissionRecoveryComplete(instance, true)
+
+14. Defense and patrol setup
+----------------------------
+For RHD_DEFENSE and RHD_PATROL, use existing stock world entities and AI.
+
+When the scenario determines the relevant area/objective condition has been satisfied:
+
+SetStockMissionLocationSecure(instance, true)
+
+15. Mission objectives
+---------------------
+The framework supports required and optional objectives.
+
+Objectives must be present on the mission instance before the mission is evaluated for completion. Use the mission activation/controller APIs to work with objectives.
+
+Complete an objective with:
+
+CompleteObjective(instance, objectiveId)
+
+Fail an objective with:
+
+FailObjective(instance, objectiveId)
+
+Required objective failure causes the mission to fail.
+
+16. Runtime diagnostics
+-----------------------
+The repository includes:
+
+RHD_GM_MissionRuntimeDiagnostics
+
+Useful checks:
+
+IsReady(component)
+HasWorldAdapter(component)
+HasScenarioAdapter(component)
+GetAvailableMissionCount(component)
+GetStatus(component)
+
+Expected setup progression:
+
+Not bootstrapped
+    -> Awaiting stock Workbench scenario configuration
+    -> Ready
+
+The available mission count should be 7 after the default mission bootstrap succeeds.
+
+17. Game Master testing order
+-----------------------------
+Use this order:
+
+1. Load the scenario in Workbench.
+2. Confirm scripts compile.
+3. Add RHD_GM_MissionGameMasterComponent to the persistent scenario entity.
+4. Configure a binding with real stock resources selected through Workbench.
+5. Call ConfigureStockScenario(binding).
+6. Verify runtime diagnostics report Ready.
+7. Verify seven mission IDs are available.
+8. Start RHD_SECURE.
+9. Register existing stock hostile entities.
+10. Trigger the secure state from authoritative scenario logic.
+11. Complete any required objective.
+12. Confirm mission completion event/state.
+13. Stop/reload and repeat the test.
+14. Only after this works, configure convoy, recovery, elimination, civilian protection, defense, and patrol.
+
+18. What the stock adapter does NOT do
+--------------------------------------
+The current stock adapter is intentionally conservative.
+
+It does not:
+- invent prefab GUIDs
+- create custom assets
+- replace stock vehicles
+- replace stock AI
+- replace civilian AI
+- delete existing stock scenario entities
+- pretend that a resource string means an entity was actually spawned
+- pretend IEntity != null is a real health/death test
+
+Actual Workbench entity placement, resource selection, and authoritative scenario/gameplay hooks remain part of the scenario configuration.
+
+19. Mission cleanup
+-------------------
+The stock adapter releases its mission tracking state when a mission ends.
+
+It intentionally does not delete existing stock scenario entities. This prevents the mission framework from destroying scenario-owned stock assets simply because a mission ended.
+
+20. Recommended final architecture
+----------------------------------
+Keep the project separated into:
+
+Workbench scenario:
+- real stock entities/resources
+- Game Master
+- scenario-specific event/update logic
+- actual world conditions
+
+RHD framework:
+- mission definitions
+- mission presets
+- objectives
+- timers
+- reinforcement state
+- mission events
+- runtime state
+- stock entity registration
+
+This keeps the framework reusable while ensuring every actual game asset comes from Arma Reforger.
+
+Troubleshooting
+---------------
+
+Status = "Not bootstrapped"
+- Confirm RHD_GM_MissionGameMasterComponent exists on a persistent scenario entity.
+- Confirm the script is compiling.
+
+Status = "Awaiting stock Workbench scenario configuration"
+- Configure a real RHD_GM_MissionWorldBinding.
+- Call ConfigureStockScenario(binding).
+- Make sure the binding passes validation.
+
+Status = "World adapter missing"
+- Confirm the controller has the scenario adapter/world adapter.
+- Use ConfigureStockScenario(binding) rather than manually leaving the controller unconfigured.
+
+Mission count is not 7
+- Confirm RHD_GM_MissionBootstrap.RegisterDefaultMissions() executes.
+- Check the Workbench script compilation output for errors.
+
+Mission starts but world entities are missing
+- Confirm the entities are actually present in the scenario.
+- Confirm they are registered through the stock registration methods.
+- Do not assume a prefab string by itself created an entity.
+
+Final note
+----------
+The repository's source code intentionally stops at the verified stock-asset/runtime boundary. The exact resource selected for a vehicle, AI group, civilian population, or marker must be selected from the real Arma Reforger Workbench project. Do not replace this with guessed resource paths or GUIDs.
