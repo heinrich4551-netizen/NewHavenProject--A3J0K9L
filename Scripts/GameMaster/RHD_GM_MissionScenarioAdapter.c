@@ -105,7 +105,7 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
 
     override bool IsMissionSuccessful(RHD_GM_MissionInstance instance)
     {
-        if (!instance || !m_World)
+        if (!instance || !m_World || !instance.AreRequiredObjectivesComplete())
             return false;
 
         RHD_GM_MissionTypeDefinition definition = RHD_GM_MissionTypeDefinition.Cast(instance.GetDefinition());
