@@ -50,6 +50,10 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
         if (!ValidateMissionAssetRequirements(definition.Type, config))
             return false;
 
+        RHD_GM_StockScenarioWorldAdapter stockWorld = RHD_GM_StockScenarioWorldAdapter.Cast(m_World);
+        if (stockWorld && !stockWorld.PrepareMission(instance))
+            return false;
+
         if (m_Binding.PrimaryPrefab)
         {
             if (!m_World.SpawnMissionVehicle(instance, m_Binding.PrimaryPrefab) && !m_Binding.AllowMissingVehicle)
@@ -88,9 +92,6 @@ class RHD_GM_MissionScenarioAdapter : RHD_GM_MissionAdapter
         if (!m_Binding || !config)
             return false;
 
-        // Missing resources are allowed only when the binding explicitly opts in.
-        // This keeps the generic framework stock-asset-only while permitting a GM
-        // to use missions that operate on entities already placed in the scenario.
         if (type == RHD_GM_MissionType.CONVOY && !m_Binding.PrimaryPrefab && !m_Binding.AllowMissingVehicle)
             return false;
 
